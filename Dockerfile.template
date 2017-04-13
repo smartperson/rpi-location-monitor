@@ -1,7 +1,6 @@
 # base-image for python on any machine using a template variable,
 # see more about dockerfile templates here:http://docs.resin.io/pages/deployment/docker-templates
-#FROM resin/raspberry-pi-python
-FROM resin/rpi-raspbian
+FROM resin/raspberry-pi-python
 
 # use apt-get if you need to install dependencies,
 # for instance if you need ALSA sound utils, just uncomment the lines below.
@@ -9,7 +8,7 @@ FROM resin/rpi-raspbian
 #    alsa-utils libasound2-dev && \
 #    apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN apt-get update && apt-get install -yq \
-		python-smbus python-imagine && \
+		python-smbus python-imaging && \
 		apt-get clean && rm -rf /var/lib/apt/lists/*
 #RUN git clone https://github.com/adafruit/Adafruit_Python_SSD1306.git
 #RUN cd Adafruit_Python_SSD1306
