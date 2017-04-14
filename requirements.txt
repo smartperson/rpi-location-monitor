@@ -2,4 +2,4 @@ Flask
 RPi.GPIO
 git+https://github.com/adafruit/Adafruit_Python_SSD1306.git
 git+https://github.com/roder/aosong.git
-pillow
+pillow==4.1.0

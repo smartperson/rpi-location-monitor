@@ -26,6 +26,7 @@ import Adafruit_SSD1306
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from aosong.am2315 import Sensor
 
 
 # Raspberry Pi pin configuration:
@@ -34,6 +35,12 @@ RST = 24
 DC = 23
 SPI_PORT = 0
 SPI_DEVICE = 0
+SENSOR_POWER = 4
+
+#bring GPIO 4 high to power our sensor
+GPIO.output(SENSOR_POWER, True)
+time.sleep(1)
+tempSensor = Sensor()
 
 # Beaglebone Black pin configuration:
 # RST = 'P9_12'
@@ -121,3 +128,9 @@ draw.text((x, top+20), 'World!', font=font, fill=255)
 # Display image.
 disp.image(image)
 disp.display()
+
+while True:
+    temperature = tempSensor.temperature()
+    humidity = tempSensor.humidity()
+    print "Temp: "+str(temperature)+" Hum: "+str(humidity)
+    delay(3)
