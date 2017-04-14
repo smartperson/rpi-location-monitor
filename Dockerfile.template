@@ -10,9 +10,6 @@ FROM resin/raspberry-pi-python
 RUN apt-get update && apt-get install -yq \
 		python-smbus python-imaging && \
 		apt-get clean && rm -rf /var/lib/apt/lists/*
-#RUN git clone https://github.com/adafruit/Adafruit_Python_SSD1306.git
-#RUN cd Adafruit_Python_SSD1306
-#RUN python setup.py install
 
 CMD modprobe i2c-dev && python /app/demo.py
 

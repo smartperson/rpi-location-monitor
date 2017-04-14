@@ -1,3 +1,4 @@
 Flask==0.10.1
 RPi.GPIO
 git+https://github.com/adafruit/Adafruit_Python_SSD1306.git
+git+https://github.com/roder/aosong.git
