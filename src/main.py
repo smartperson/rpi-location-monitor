@@ -9,7 +9,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 
-import AM2320.py
+from AM2322 import AM2322
 
 app = Flask(__name__)
 
@@ -23,7 +23,14 @@ def server():
 if __name__ == '__main__':
     serverThread = threading.Thread(target=server)
     serverThread.start()
+    am2322 = AM2322(0, synchronous=True)
+    for _ in range(10):
+        am2322.read()
+        print am2322.temperature, am2322.humidity
+    GPIO.cleanup()
+    
     # display init
+    '''RST = 24
     disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST)
     disp.begin()
     disp.clear()
@@ -56,4 +63,5 @@ if __name__ == '__main__':
     draw.text((x, top+20), 'World!', font=font, fill=255)
     disp.image(image)
     disp.display()
+    '''
     
