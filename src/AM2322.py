@@ -20,7 +20,7 @@ class  CommunicationError(Exception):
 class AM2322(object):
     """AM2322 temperature and humidity sensor class.
     """
-    def __init__(self, interface=0, sensor_address=I2C_ADDR_AM2322, sensor_power=7, synchronous=True):
+    def __init__(self, interface=0, sensor_power=4, synchronous=True, sensor_address=I2C_ADDR_AM2322):
         self.interface = interface
         self.address = sensor_address
         self.temperature = -1000.0
@@ -29,9 +29,9 @@ class AM2322(object):
         self._synchronous = synchronous
         if sensor_power: #if you set the power pin to Nil or 0, we assume you're taking care of it
             GPIO.setwarnings(False)
-            GPIO.setmode(GPIO.BOARD)
-            GPIO.setup(7, GPIO.OUT)
-            GPIO.output(7, True)
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(sensor_power, GPIO.OUT)
+            GPIO.output(sensor_power, True)
             self._set_ready_at(seconds=2)
         else:
             self._set_ready_at(seconds=0)

@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# coding: utf-8
 from flask import Flask
 import threading
 import time
@@ -24,13 +26,9 @@ if __name__ == '__main__':
     serverThread = threading.Thread(target=server)
     serverThread.start()
     am2322 = AM2322(0, synchronous=True)
-    for _ in range(10):
-        am2322.read()
-        print am2322.temperature, am2322.humidity
-    GPIO.cleanup()
     
     # display init
-    '''RST = 24
+    RST = 24
     disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST)
     disp.begin()
     disp.clear()
@@ -44,18 +42,11 @@ if __name__ == '__main__':
     shape_width = 20
     top = padding
     bottom = height-padding
-    x = padding
-    draw.ellipse((x, top , x+shape_width, bottom), outline=255, fill=0)
-    x += shape_width+padding
-    draw.rectangle((x, top, x+shape_width, bottom), outline=255, fill=0)
-    x += shape_width+padding
-    # Draw a triangle.
-    draw.polygon([(x, bottom), (x+shape_width/2, top), (x+shape_width, bottom)], outline=255, fill=0)
-    x += shape_width+padding
-    # Draw an X.
-    draw.line((x, bottom, x+shape_width, top), fill=255)
-    draw.line((x, top, x+shape_width, bottom), fill=255)
-    x += shape_width+padding
+    x = 2
+    x += 22
+    x += 22
+    x += 22
+    x += 22
     font = ImageFont.load_default()
     # Some other nice fonts to try: http://www.dafont.com/bitmap.php
     #font = ImageFont.truetype('Minecraftia.ttf', 8)
@@ -63,5 +54,11 @@ if __name__ == '__main__':
     draw.text((x, top+20), 'World!', font=font, fill=255)
     disp.image(image)
     disp.display()
-    '''
-    
+    for _ in range(10):
+        am2322.read()
+        print am2322.temperature, am2322.humidity
+        draw.rectangle((0,0,width,height), outline=0, fill=0)
+        draw.text((4, top),    'Temp: '+str(am2322.temperature)+'°C', font=font, fill=255)
+        draw.text((4, top+16), 'Humi: '+str(am2322.humidity)   +'%' , font=font, fill=255)
+        disp.image(image)
+        disp.display()
