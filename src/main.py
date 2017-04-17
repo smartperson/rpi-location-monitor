@@ -70,8 +70,8 @@ if __name__ == '__main__':
         temperatureReading = (am2322.temperature*9/5)+32
         humidityReading = am2322.humidity
         draw.rectangle((0,0,width,height), outline=0, fill=0)
-        draw.text((4, top),    'Temp: {}°F'.format(temperatureReading), font=font, fill=255)
-        draw.text((4, top+16), 'Humi: {}%'.format(humidityReading)    , font=font, fill=255)
+        draw.text((4, top),    u'Temp: {}°F'.format(temperatureReading), font=font, fill=255)
+        draw.text((4, top+16), u'Humi: {}%'.format(humidityReading)    , font=font, fill=255)
         disp.image(image)
         disp.display()
         time.sleep(5)
