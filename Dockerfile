@@ -26,5 +26,7 @@ COPY . ./
 # switch on systemd init system in container
 ENV INITSYSTEM on
 
+RUN git clone https://github.com/joan2937/pigpio && cd pigpio && make && make install
+
 # main.py will run when container starts up on the device
-CMD modprobe -r i2c_bcm2708 && modprobe i2c_bcm2708 baudrate=50000 && modprobe i2c-dev && python src/main.py
+CMD modprobe -r i2c_bcm2708 && modprobe i2c_bcm2708 baudrate=50000 && modprobe i2c-dev && pigpiod && python src/main.py

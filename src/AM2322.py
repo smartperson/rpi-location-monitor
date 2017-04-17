@@ -2,7 +2,7 @@
 # origininal source: https://github.com/8devices/IoTPy/
 from time import sleep
 from struct import unpack
-import Adafruit_GPIO.I2C as I2C
+import pigpio
 import RPi.GPIO as GPIO
 import datetime as DateTime
 
@@ -25,8 +25,8 @@ class AM2322(object):
         self.address = sensor_address
         self.temperature = -1000.0
         self.humidity = -1
-        self.device = I2C.get_i2c_device(sensor_address, interface)
         self._synchronous = synchronous
+        self.thisPi = pigpio.pi()
         if sensor_power: #if you set the power pin to Nil or 0, we assume you're taking care of it
             GPIO.setwarnings(False)
             GPIO.setmode(GPIO.BCM)
@@ -35,22 +35,19 @@ class AM2322(object):
             self._set_ready_at(seconds=2)
         else:
             self._set_ready_at(seconds=0)
+        self.device = self.thisPi.i2c_open(interface, sensor_address)
     def _set_ready_at(self, seconds=3):
         self._ready_at = DateTime.datetime.now()+DateTime.timedelta(seconds=seconds)
         if self._synchronous:
             sleep(seconds)
     def _read_raw(self, command, regaddr, regcount):
         try:
-            self.device.write8(command, 0x03)
+            self.thisPi.i2c_write_quick(self.device, 0)
         except:
             pass # print 'sent wakeup command'
-        # sleep(0.001)
-        # try:
-        self.device.writeList(command, [regaddr, regcount])
-        # sleep(0.0015)
-        buf = self.device.readList(command, regcount+4)
-        # except IOError, exc:
-        #    raise CommunicationError(str(exc))
+        self.thisPi.i2c_write_i2c_block_data(self.device, command, [regaddr, regcount])
+        sleep(0.0015)
+        (bufcount, buf) = self.thisPi.i2c_read_device(self.device, regcount+4)
         self._set_ready_at() # we need to wait 3 seconds before we can read again
         # RPi might pick up an extra 0x80 because of previous packet's ACK timing. Kludge to fix.
         buf[0] = buf[0] & 0x7F

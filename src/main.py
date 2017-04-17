@@ -33,7 +33,7 @@ if __name__ == '__main__':
     global humidityReading
     serverThread = threading.Thread(target=server)
     serverThread.start()
-    """
+    
     am2322 = AM2322(0, synchronous=True)
     
     # display init
@@ -74,5 +74,4 @@ if __name__ == '__main__':
         draw.text((4, top+16), 'Humi: {}%'.format(humidityReading)    , font=font, fill=255)
         disp.image(image)
         disp.display()
-        time.sleep(10)
-    """
+        time.sleep(5)
