@@ -11,8 +11,6 @@ RUN apt-get update && apt-get install -yq \
 		python-smbus python-imaging && \
 		apt-get clean && rm -rf /var/lib/apt/lists/*
 
-CMD modprobe i2c-dev && python /app/demo.py
-
 # Set our working directory
 WORKDIR /usr/src/app
 
@@ -29,4 +27,4 @@ COPY . ./
 ENV INITSYSTEM on
 
 # main.py will run when container starts up on the device
-CMD ["python","src/main.py"]
+CMD modprobe -r i2c_bcm2708 && modprobe i2c_bcm2708 baudrate=50000 && modprobe i2c-dev && python src/main.py

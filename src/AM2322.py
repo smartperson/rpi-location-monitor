@@ -36,21 +36,21 @@ class AM2322(object):
         else:
             self._set_ready_at(seconds=0)
     def _set_ready_at(self, seconds=3):
-        self.ready_at = DateTime.datetime.now()+DateTime.timedelta(seconds=seconds)
+        self._ready_at = DateTime.datetime.now()+DateTime.timedelta(seconds=seconds)
         if self._synchronous:
             sleep(seconds)
     def _read_raw(self, command, regaddr, regcount):
         try:
-            self.device.write8(command, 0x00)
+            self.device.write8(command, 0x03)
         except:
-            print 'sent wakeup command'
-        sleep(0.01)
-        try:
-            self.device.writeList(command, [regaddr, regcount])
-            sleep(0.01)
-            buf = self.device.readList(command, regcount+4)
-        except IOError, exc:
-            raise CommunicationError(str(exc))
+            pass # print 'sent wakeup command'
+        # sleep(0.001)
+        # try:
+        self.device.writeList(command, [regaddr, regcount])
+        # sleep(0.0015)
+        buf = self.device.readList(command, regcount+4)
+        # except IOError, exc:
+        #    raise CommunicationError(str(exc))
         self._set_ready_at() # we need to wait 3 seconds before we can read again
         # RPi might pick up an extra 0x80 because of previous packet's ACK timing. Kludge to fix.
         buf[0] = buf[0] & 0x7F
@@ -85,13 +85,13 @@ class AM2322(object):
         raw_data = self._read_raw(PARAM_AM2322_READ, REG_AM2322_HUMIDITY_MSB, 4)
         self.temperature = unpack('>H', raw_data[-2:])[0] / 10.0
         self.humidity = unpack('>H', raw_data[-4:2])[0] / 10.0
-    def ready():
+    def ready(self):
         if self._ready_at <= DateTime.datetime.now():
             return True
         else:
             return False
-    def time_to_ready():
-        delayRequired = self._ready_at - DateTime.datetime.now()
+    def time_to_ready(self):
+        delayRequired = (self._ready_at - DateTime.datetime.now()).total_seconds()
         if delayRequired < 0:
             delayRequired = 0
         return delayRequired

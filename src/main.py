@@ -3,6 +3,7 @@
 from flask import Flask
 import threading
 import time
+import os
 
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_SSD1306
@@ -13,18 +14,26 @@ from PIL import ImageFont
 
 from AM2322 import AM2322
 
+# temperatureReading = 0
+# humidityReading = 0
+
 app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    global temperatureReading
+    global humidityReading
+    return '{} currently: {}°F, {}% Humidity'.format(os.environ.get('ROOM_NAME','room'), temperatureReading, humidityReading)
 
 def server():
     app.run(host='0.0.0.0', port=80)
 
 if __name__ == '__main__':
+    global temperatureReading
+    global humidityReading
     serverThread = threading.Thread(target=server)
     serverThread.start()
+    """
     am2322 = AM2322(0, synchronous=True)
     
     # display init
@@ -54,11 +63,16 @@ if __name__ == '__main__':
     draw.text((x, top+20), 'World!', font=font, fill=255)
     disp.image(image)
     disp.display()
-    for _ in range(10):
+    while True:
+        # time.sleep(am2322.time_to_ready())
         am2322.read()
         print am2322.temperature, am2322.humidity
+        temperatureReading = (am2322.temperature*9/5)+32
+        humidityReading = am2322.humidity
         draw.rectangle((0,0,width,height), outline=0, fill=0)
-        draw.text((4, top),    'Temp: '+str(am2322.temperature)+'°C', font=font, fill=255)
-        draw.text((4, top+16), 'Humi: '+str(am2322.humidity)   +'%' , font=font, fill=255)
+        draw.text((4, top),    'Temp: {}°F'.format(temperatureReading), font=font, fill=255)
+        draw.text((4, top+16), 'Humi: {}%'.format(humidityReading)    , font=font, fill=255)
         disp.image(image)
         disp.display()
+        time.sleep(10)
+    """
