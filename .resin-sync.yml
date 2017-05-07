@@ -3,3 +3,8 @@ local_resinos:
   build-triggers:
     - Dockerfile: 3746ecd5fb13456f993c84cfc58ac0c3f2c780496735d037813bfe249e81af44
   environment: []
+uuid: 4b57a4a192fedc94fb9054e0db4251be
+destination: /usr/src/app
+ignore:
+  - .git
+  - node_modules/
