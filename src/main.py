@@ -12,6 +12,7 @@ import json
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_SSD1306
 from Adafruit_IO import Client
+import RPi.GPIO as GPIO
 
 from PIL import Image
 from PIL import ImageDraw
@@ -125,8 +126,11 @@ if __name__ == '__main__':
     
     serverThread = threading.Thread(target=server)
     serverThread.start()
+    i2c_interface = 1
+    if GPIO.RPI_INFO['P1_REVISION'] == 1: #old RPi have user i2c on bus 0
+        i2c_interface = 0
     
-    am2322 = AM2322(0, synchronous=True)
+    am2322 = AM2322(i2c_interface, synchronous=True)
     
     # display init
     (disp, draw, image) = i2c_display_setup()
