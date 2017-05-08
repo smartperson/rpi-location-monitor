@@ -17,6 +17,7 @@ import RPi.GPIO as GPIO
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from cStringIO import StringIO
 
 from AM2322 import AM2322
 
@@ -110,6 +111,14 @@ def i2c_display_setup(rst=DISP_RST):
     disp.display()
     return (disp, draw, image)
 
+def network_listen():
+    listenSocket = socket(socket.AF_INET,socket.SOCK_DGRAM)
+    listenSocket.bind(("", UDP_PORT))
+    while True:
+        #1024 is sufficient buffer for our status packets, which are around 350B
+        data,addr = UDPSock.recvfrom(1024) 
+        print data.strip(),addr
+
 if __name__ == '__main__':
     global temperatureReading
     global humidityReading
@@ -118,7 +127,6 @@ if __name__ == '__main__':
     udpSocket = socket(AF_INET, SOCK_DGRAM)
     udpSocket.bind(('', 0))
     udpSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-    
     
     temperatureReading = 0
     humidityReading = 0
@@ -134,15 +142,22 @@ if __name__ == '__main__':
     
     # display init
     (disp, draw, image) = i2c_display_setup()
-    padding = top = 2
+    padding = 2
+    top = padding
     font = ImageFont.load_default()
+    localIcon = Image.open(StringIO(ROOM_PBM_64.decode("base64")))
     setInterval(60, broadcast_to_network)
         
     while True:
         (temperatureReading, humidityReading) = i2c_read_temperature()
         draw.rectangle((0,0,disp.width,disp.height), outline=0, fill=0)
-        draw.text((4, top),    u'Temp: {}°F'.format(temperatureReading), font=font, fill=255)
-        draw.text((4, top+16), u'Humi: {}%'.format(humidityReading)    , font=font, fill=255)
+        draw.text((32+padding, top),    u'{:.0f}°'.format(temperatureReading), font=font, fill=255)
+        draw.text((32+padding, top+16), u'{:.0f}%'.format(humidityReading)    , font=font, fill=255)
+        draw.rectangle((64,0,64+32,0+32), outline=255, fill=255) # test rectangle for spacing
+        draw.text((96+padding, top),    u'{:.0f}°'.format(temperatureReading), font=font, fill=255)
+        draw.text((96+padding, top+16), u'{:.0f}%'.format(humidityReading)    , font=font, fill=255)
+        draw.rectangle((0,32,0+32,32+32), outline=255, fill=255) # test rectangle for spacing
+        image.paste(localIcon, (0,0))
         disp.image(image)
         disp.display()
         time.sleep(5)
