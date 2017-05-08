@@ -1,3 +1,4 @@
+python-dateutil
 Flask
 RPi.GPIO>=0.6.3
 git+https://github.com/adafruit/Adafruit_Python_SSD1306.git

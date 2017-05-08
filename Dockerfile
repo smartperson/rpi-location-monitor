@@ -8,8 +8,9 @@ FROM resin/raspberry-pi-python
 #    alsa-utils libasound2-dev && \
 #    apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN apt-get update && apt-get install -yq \
-		python-smbus python-imaging && \
+		python-smbus libfreetype6-dev python-imaging && \
 		apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/joan2937/pigpio && cd pigpio && make && make install && cd .. && rm -rf pigpio
 
 # Set our working directory
 WORKDIR /usr/src/app
@@ -25,8 +26,6 @@ COPY . ./
 
 # switch on systemd init system in container
 ENV INITSYSTEM on
-
-RUN git clone https://github.com/joan2937/pigpio && cd pigpio && make && make install && cd .. && rm -rf pigpio
 
 # main.py will run when container starts up on the device
 CMD modprobe -r i2c_bcm2708 && modprobe i2c_bcm2708 baudrate=50000 && modprobe i2c-dev && pigpiod && python src/main.py

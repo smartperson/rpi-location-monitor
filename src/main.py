@@ -3,7 +3,8 @@
 from flask import Flask
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+import dateutil.parser
 import os
 import sys
 from socket import *
@@ -113,23 +114,31 @@ def i2c_display_update(display, draw, image, font):
     index = 0
     draw.rectangle((0,0,disp.width,disp.height), outline=0, fill=0)
     padding = 2
+    top = 1
     # Draw information for this device
     localIcon = Image.open(StringIO(ROOM_PBM_64.decode('base64')))
     baseX = (index % 1) * 64
     baseY = (index / 2) * 32
     image.paste(localIcon, (baseX,baseY))
-    draw.text((baseX+32+padding, baseY+padding),    u'{:.0f}°'.format(temperatureReading), font=font, fill=255)
-    draw.text((baseX+32+padding, baseY+padding+16), u'{:.0f}%'.format(humidityReading)    , font=font, fill=255)
+    draw.text((baseX+32+padding, baseY+top),    u'{:.0f}°'.format(temperatureReading), font=font, fill=255)
+    draw.text((baseX+32+padding, baseY+top+16), u'{:.0f}%'.format(humidityReading)    , font=font, fill=255)
     
     # Draw information for each known network device
+    identifierToRemove = None
     for identifier, monitorData in monitorsTracked.iteritems():
+        modifiedUTC = dateutil.parser.parse(monitorData["time"])
+        if (modifiedUTC < (datetime.utcnow() - timedelta(hours=1))):
+            identifierToRemove = identifier
+            continue
         icon = Image.open(StringIO(monitorData["room_pbm64"].decode('base64')))
         index = index+1
         baseX = (index % 2) * 64
         baseY = (index / 2) * 32
         image.paste(icon, (baseX,baseY))
-        draw.text((baseX+32+padding, baseY+padding),    u'{:.0f}°'.format(monitorData["temperature"]), font=font, fill=255)
-        draw.text((baseX+32+padding, baseY+padding+16), u'{:.0f}%'.format(monitorData["humidity"])    , font=font, fill=255)
+        draw.text((baseX+32+padding, baseY+top),    u'{:.0f}°'.format(monitorData["temperature"]), font=font, fill=255)
+        draw.text((baseX+32+padding, baseY+16), u'{:.0f}%'.format(monitorData["humidity"])    , font=font, fill=255)
+    if identifierToRemove:
+        monitorsTracked.pop(identifierToRemove, None)
     disp.image(image)
     disp.display()
     
@@ -185,7 +194,8 @@ if __name__ == '__main__':
     (disp, draw, image) = i2c_display_setup()
     padding = 2
     top = padding
-    font = ImageFont.load_default()
+    # font = ImageFont.load_default()
+    font = ImageFont.truetype("src/arial-bold.ttf", size=14)
     
     setInterval(60, broadcast_to_network)
     setInterval(42, i2c_display_update, disp, draw, image, font)
