@@ -28,6 +28,7 @@ ADAFRUIT_IO_BASENAME = os.environ.get('AIO_BASENAME')
 ROOM_NAME = os.environ.get('ROOM_NAME', 'Room')
 ROOM_PBM_64 = os.environ.get('ROOM_PBM_64')
 UDP_PORT = 51231
+UDP_MULTICAST_GROUP = "224.0.0.111"
 DISP_RST = 24
 
 app = Flask(__name__)
@@ -72,9 +73,9 @@ def broadcast_to_network():
         "room_pbm64": ROOM_PBM_64,
         "temperature": temperatureReading,
         "humidity": humidityReading
-    }#repr(time.time()) + '\n'
+    }
     dataJSON = json.dumps(data, separators=(',',':'))
-    udpSocket.sendto(dataJSON, ('<broadcast>', UDP_PORT))
+    udpSocket.sendto(dataJSON, (UDP_MULTICAST_GROUP, UDP_PORT))
 
 def i2c_read_temperature():
     am2322.read()
@@ -94,40 +95,80 @@ def i2c_display_setup(rst=DISP_RST):
     draw = ImageDraw.Draw(image)
     draw.rectangle((0,0,width,height), outline=0, fill=0)
     padding = 2
-    shape_width = 20
     top = padding
     bottom = height-padding
     x = 2
-    x += 22
-    x += 22
-    x += 22
-    x += 22
     font = ImageFont.load_default()
     # Some other nice fonts to try: http://www.dafont.com/bitmap.php
     #font = ImageFont.truetype('Minecraftia.ttf', 8)
-    draw.text((x, top),    'Hello',  font=font, fill=255)
-    draw.text((x, top+20), 'World!', font=font, fill=255)
     disp.image(image)
     disp.display()
     return (disp, draw, image)
 
+def i2c_display_update(display, draw, image, font):
+    global monitorsTracked
+    global temperatureReading
+    global humidityReading
+    # Clear and prepare
+    index = 0
+    draw.rectangle((0,0,disp.width,disp.height), outline=0, fill=0)
+    padding = 2
+    # Draw information for this device
+    localIcon = Image.open(StringIO(ROOM_PBM_64.decode('base64')))
+    baseX = (index % 1) * 64
+    baseY = (index / 2) * 32
+    image.paste(localIcon, (baseX,baseY))
+    draw.text((baseX+32+padding, baseY+padding),    u'{:.0f}°'.format(temperatureReading), font=font, fill=255)
+    draw.text((baseX+32+padding, baseY+padding+16), u'{:.0f}%'.format(humidityReading)    , font=font, fill=255)
+    
+    # Draw information for each known network device
+    for identifier, monitorData in monitorsTracked.iteritems():
+        icon = Image.open(StringIO(monitorData["room_pbm64"].decode('base64')))
+        index = index+1
+        baseX = (index % 2) * 64
+        baseY = (index / 2) * 32
+        image.paste(icon, (baseX,baseY))
+        draw.text((baseX+32+padding, baseY+padding),    u'{:.0f}°'.format(monitorData["temperature"]), font=font, fill=255)
+        draw.text((baseX+32+padding, baseY+padding+16), u'{:.0f}%'.format(monitorData["humidity"])    , font=font, fill=255)
+    disp.image(image)
+    disp.display()
+    
+
 def network_listen():
-    listenSocket = socket(socket.AF_INET,socket.SOCK_DGRAM)
+    global monitorsTracked
+    import fcntl
+    import struct
+    listenSocket = socket(AF_INET, SOCK_DGRAM)
+    # listenSocket.setsockopt(SOL_SOCKET, SO_REUSEPORT, 1)
+    listenSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     listenSocket.bind(("", UDP_PORT))
+    multicast_group = UDP_MULTICAST_GROUP
+    listenSocket.setsockopt(SOL_IP, IP_MULTICAST_LOOP, 0)
+    interface_ip = inet_ntoa(fcntl.ioctl(listenSocket.fileno(), 0x8915, struct.pack('256s',"wlan0"[:15]))[20:24])
+    listenSocket.setsockopt(SOL_IP, IP_MULTICAST_IF, inet_aton(interface_ip))
+    mreq = inet_aton(multicast_group) + inet_aton(interface_ip)
+    listenSocket.setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, str(mreq)) # this might give us all multicasts…?
+    
     while True:
         #1024 is sufficient buffer for our status packets, which are around 350B
-        data,addr = UDPSock.recvfrom(1024) 
-        print data.strip(),addr
+        dataJSON,addr = listenSocket.recvfrom(1024)
+        data = json.loads(dataJSON)
+        monitorsTracked[data["identifier"]] = data
 
 if __name__ == '__main__':
     global temperatureReading
     global humidityReading
     global aio
     global udpSocket
+    global monitorsTracked
     udpSocket = socket(AF_INET, SOCK_DGRAM)
-    udpSocket.bind(('', 0))
-    udpSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    udpSocket.setsockopt(IPPROTO_IP, IP_MULTICAST_TTL, 20)
+    udpSocket.setsockopt(SOL_IP, IP_MULTICAST_LOOP, 0)
     
+    monitorsTracked = {}
+    listenThread = threading.Thread(target=network_listen)
+    listenThread.start()
+
     temperatureReading = 0
     humidityReading = 0
     aio = Client(ADAFRUIT_IO_KEY)
@@ -145,19 +186,10 @@ if __name__ == '__main__':
     padding = 2
     top = padding
     font = ImageFont.load_default()
-    localIcon = Image.open(StringIO(ROOM_PBM_64.decode("base64")))
+    
     setInterval(60, broadcast_to_network)
+    setInterval(42, i2c_display_update, disp, draw, image, font)
         
     while True:
         (temperatureReading, humidityReading) = i2c_read_temperature()
-        draw.rectangle((0,0,disp.width,disp.height), outline=0, fill=0)
-        draw.text((32+padding, top),    u'{:.0f}°'.format(temperatureReading), font=font, fill=255)
-        draw.text((32+padding, top+16), u'{:.0f}%'.format(humidityReading)    , font=font, fill=255)
-        draw.rectangle((64,0,64+32,0+32), outline=255, fill=255) # test rectangle for spacing
-        draw.text((96+padding, top),    u'{:.0f}°'.format(temperatureReading), font=font, fill=255)
-        draw.text((96+padding, top+16), u'{:.0f}%'.format(humidityReading)    , font=font, fill=255)
-        draw.rectangle((0,32,0+32,32+32), outline=255, fill=255) # test rectangle for spacing
-        image.paste(localIcon, (0,0))
-        disp.image(image)
-        disp.display()
         time.sleep(5)
